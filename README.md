@@ -97,3 +97,79 @@ Project Setup:
 7. Pipeline
     i. `pipeline/training_pipeline.py` - To execute all the process (Data Ingestion, Data Processing, Model Training and Model saved)
 
+8. Flask - installation `flask`
+    i. `templates/index.html` and `static\style.css` - Create a web page
+    ii. `application.py` - Prediction method using POST method
+
+9. CI-CD Deployment using Jenkins and Google Cloud
+    i. Setup Jenkins Container (DinD - Docker in Docker)
+    ii. Github Integration
+    iii. Dockerization of project (Docker file)
+    iv. Create a venv in Jenkins
+    v. Build Docker Image of project - Push to Google Cloud Registry (GCR)
+    vi. Extract image from GCR - Push to Google Cloud Run (App is deployed)
+
+    i. Setup Jenkins Container (DinD - Docker in Docker)
+        1. Create `custom_jenkins` folder:
+            `Dockerfile` create file and paste code
+
+            # Use official Jenkins with Docker-in-Docker support
+            FROM jenkins/jenkins:lts-jdk17
+
+            USER root
+
+            # Install Docker CLI + DinD dependencies
+            RUN apt-get update && \
+                apt-get install -y \
+                ca-certificates \
+                curl \
+                gnupg \
+                lsb-release && \
+                curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+                echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+                $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+                apt-get update && \
+                apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin && \
+                apt-get clean && rm -rf /var/lib/apt/lists/*
+
+            # Allow Jenkins user to use Docker without sudo
+            RUN usermod -aG docker jenkins
+
+            # Switch back to Jenkins user
+            USER jenkins
+
+        2. Create Docker Image:
+            i. Check docker login - `docker login`
+            ii. Create Image - `docker build -t jenkins-dind .`
+            iii. Finally Check the repository image created - `docker images`
+
+        3. Run the Docker Image:
+            docker run -d --name jenkins-dind `
+                --privileged ` # Run privileged mode
+                -p 8080:8080 -p 50000:50000 ` # Port number
+                -v /var/run/docker.sock:/var/run/docker.sock ` # Setup connection between docker and jenkins
+                -v jenkins_home:/var/jenkins_home ` # Create a volume directory for jenkins
+                jenkins-dind # Container name
+
+        4. Install suggested plugin and Create user
+            `docker ps`
+            `docker logs jenkins-dind` # Password will generate
+
+            **** Open Web Browser - `http://localhost:8080/` ****
+            i. Paste the password
+            ii. Customize Jenkins - Install suggested plugins
+            iii. Create the user
+        
+        5. Setup Jenkins Container - Terminal custom_jenkins
+            `docker exec -u root -it jenkins-dind bash` # Open the bash
+            `apt update -y` # Packages
+            `apt install -y python3` # Install python
+            `python3 --version` # Check the python version
+            `ln -s /usr/bin/python3 /usr/bin/python` # Nick name python3 to python
+            `python --version` # Version check the python3 or python both will work
+            `apt install -y python3-pip` # Installing pre-requisiting
+            `apt install -y python3-venv` # Create virual environment
+            `exit` # End the bash
+
+    ii. Github Integration
+        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

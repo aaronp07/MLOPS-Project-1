@@ -99,7 +99,7 @@ class DataProcessor:
             
             logger.info('Feature Selection - Completed Successfully')
             
-            return df
+            return top_10_df
         except Exception as e:
             logger.error(f'Error during feature selection step {e}')
             raise CustomException('Error while feature selection', e)
