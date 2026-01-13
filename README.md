@@ -172,4 +172,126 @@ Project Setup:
             `exit` # End the bash
 
     ii. Github Integration
+        1. Github Generate Token
+            * Profile -> Setting -> Developer Setting -> Personal Access Token -> Tokens (classic)
+            * Note `jenkins-github-token`
+                - Permission
+                    repo, admin:repo_hook
+            * Generate token
         
+        2. Jenkins Dashboard
+            * Manage Jenkins -> Credentials -> click (global) -> Add Credential
+            * Username: github account name (aaronp07)
+            * Password: Github token
+            * Id: github-token
+            * Description: github-token
+            * Create
+
+        3. Jenkins Dashboard
+            * New Item
+                Item Name: MLOPS-1
+                Select -> `Pipeline`
+                Ok
+            * Pipeline session
+                Select -> `Pipeline script from SCM` (Source Code Management)
+                SCM Select -> Git
+                Repository URL -> `https://github.com/aaronp07/MLOPS-Project-1.git`
+                Credential -> github-token
+                Branch to build: */main
+                Save
+
+        4. Pipeline Syntax
+            * Sample Step
+                Select -> `checkout: Check out from version control`
+                Repository URL -> `https://github.com/aaronp07/MLOPS-Project-1.git`
+                Credential -> github-token
+                Branch to build: */main
+                Generate Pipeline Script
+
+        5. VS-Code Create File `Jenkinsfile`
+            pipeline{
+                agent any
+
+                stages{
+                    stage("Cloning Github repo to Jenkins"){
+                        steps{
+                            script{
+                                echo 'Cloning Github repo to Jenkins...........'
+                                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-token', url: 'https://github.com/aaronp07/MLOPS-Project-1.git']])
+                            }
+                        }
+                    }
+                }
+            }
+
+        6. Git bash
+            `git add .`
+            `git commit -m 'commit'`
+            `git push origin main`
+
+        7. Jenkins Dashboard
+            * Click -> `MLOPS-1`
+            * Build Now
+            * Workspaces (Clone all codes in Jenkins workspace)
+
+    iii. Dockerization of project (Docker file)
+        * Create `Dockerfile` in root folder
+            FROM python:slim
+
+            ENV PYTHONDONTWRITEBYTECODE = 1\
+                PYTHONUNBUFFERED = 1
+
+            WORKDIR /app
+
+            RUN apt-get update && apt-get-install -y --no-install-recommends \
+                libgomp1 \
+                && apt-get-clean \
+                && rm -rf /var/lib/apt/lists/*
+
+            COPY . .
+
+            RUN pip install --no-cache-dir -e .
+
+            RUN python pipeline/training_pipeline.py
+
+            EXPOSE 5000
+
+            CMD ["python", "application.py"]
+
+    iv. Create a venv in Jenkins
+        * Jenkinsfile
+            pipeline{
+                agent any
+
+                environment {
+                    VENV_DIR = 'venv'
+                }
+
+                stages{
+                    stage("Cloning Github repo to Jenkins"){
+                        steps{
+                            script{
+                                echo 'Cloning Github repo to Jenkins...........'
+                                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-token', url: 'https://github.com/aaronp07/MLOPS-Project-1.git']])
+                            }
+                        }
+                    }
+
+                    stage("Setting up virtual environment and installing dependencies"){
+                        steps{
+                            script{ 
+                                echo 'Setting up virtual environment and installing dependencies.......'
+                                sh '''
+                                python -m venv ${VENV_DIR}
+                                . ${VENV_DIR}/bin/activate
+                                pip install --upgrade pip
+                                pip install -e .
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+
+    v. Build Docker Image of project - Push to Google Cloud Registry (GCR)
+    vi. Extract image from GCR - Push to Google Cloud Run (App is deployed)
