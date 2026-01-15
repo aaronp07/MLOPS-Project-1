@@ -16,6 +16,13 @@ RUN pip install --no-cache-dir -e .
 
 RUN python pipeline/training_pipeline.py
 
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    ca-certificates \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
 EXPOSE 5000
 
 CMD ["python", "application.py"]
